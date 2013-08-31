@@ -1,0 +1,6 @@
+ebin/
+*.dump
+deps/
+vmling
+.applist
+/log/
