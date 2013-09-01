@@ -5,7 +5,9 @@
   {registered, []},
   {applications, [
                   kernel,
-                  stdlib
+                  stdlib,
+                  hackney,
+                  jiffy
                  ]},
   {mod, { erldocker_app, []}},
   {env, []}

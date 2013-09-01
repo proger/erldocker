@@ -92,7 +92,7 @@ stop(Containers, [{t, 10}] = Args) when is_list(Containers) -> {error, not_imple
 tag(Image, Repository, [{tag, undefined}, {force, false}] = Args) -> {error, not_implemented}.
 
 % @doc Identical to the docker version command.
-version() -> {error, not_implemented}.
+version() -> erldocker_api:get("/version").
 
 % @doc Identical to the docker wait command.
 wait(Containers) when is_list(Containers) -> {error, not_implemented}.
