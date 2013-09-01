@@ -9,7 +9,7 @@
 %% ===================================================================
 
 start(_StartType, _StartArgs) ->
-    {ok, _Pid} = hackney:start_pool(erldocker_pool, [{timeout, 150000}, {pool_size, 10}]),
+    {ok, _Pid} = hackney:start_pool(erldocker_pool, [{timeout, 150000}, {pool_size, 1}]),
 
     erldocker_sup:start_link().
 
