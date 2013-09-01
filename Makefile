@@ -8,6 +8,6 @@ endif
 
 run:
 	ERL_LIBS=deps erl -pa ebin -config run/sys.config \
-		 -eval '[ok = application:ensure_started(A, permanent) || A <- [lager,asn1,crypto,public_key,ssl,mimetypes,hackney]]'
+		 -eval '[ok = application:ensure_started(A, permanent) || A <- [lager,asn1,crypto,public_key,ssl,mimetypes,hackney,erldocker]]'
 
 .PHONY: run

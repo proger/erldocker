@@ -1,5 +1,4 @@
 -module(erldocker_app).
-
 -behaviour(application).
 
 %% Application callbacks
@@ -10,7 +9,11 @@
 %% ===================================================================
 
 start(_StartType, _StartArgs) ->
+    {ok, _Pid} = hackney:start_pool(erldocker_pool, [{timeout, 150000}, {pool_size, 10}]),
+
     erldocker_sup:start_link().
 
 stop(_State) ->
+    hackney:stop_pool(erldocker_pool),
+
     ok.

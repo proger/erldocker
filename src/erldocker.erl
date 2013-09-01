@@ -35,7 +35,7 @@ images([{name, undefined}, {quiet, false}, {all, false}, {viz, false}] = Args) -
 import_image(Src, [{repository, undefined}, {tag, undefined}] = Args) -> {error, not_implemented}.
 
 % @doc Identical to the docker info command.
-info() -> {error, not_implemented}.
+info() -> erldocker_api:get("/info").
 
 % @doc Identical to the docker insert command.
 insert(Url, Path) -> {error, not_implemented}.
