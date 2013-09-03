@@ -58,7 +58,7 @@ read_body(Receiver, Client) ->
             Receiver ! {self(), {data, eof}},
             {ok, Client2};
         {error, _Reason} = E->
-            Receiver ! {self(), {data, E}},
+            Receiver ! {self(), E},
             E
     end.
 

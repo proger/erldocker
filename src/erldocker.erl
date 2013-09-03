@@ -69,12 +69,19 @@ restart(CID, Args) ->
 kill(CID, _Config) ->
     erldocker_api:post([containers, CID, kill]).
 
-% @doc Attach to container.
-attach(CID) -> attach(CID, default_args(attach)).
-attach(CID, Args) ->
-    erldocker_api:post([containers, CID, attach], Args).
+% @doc Attach to container and grab logs.
+attach_logs(CID) ->
+    either:bind(erldocker_api:post_stream([containers, CID, attach], [logs, stdout, stderr]), fun logs_proc/1).
 
-% @doc Attach to container. Starts sending messages to calling process. Returns {ok, Pid}.
+logs_proc(Pid) -> {ok, logs_proc(Pid, [])}.
+logs_proc(Pid, Acc) ->
+    receive
+        {Pid, {error, _}} -> iolist_to_binary(lists:reverse(Acc));
+        {Pid, {data, eof}} -> iolist_to_binary(lists:reverse(Acc));
+        {Pid, {data, D}} -> logs_proc(Pid, [D|Acc])
+    end.
+
+% @doc Attach to container. Starts sending messages to calling process with output. Returns {ok, Pid}.
 attach_stream(CID) ->
     erldocker_api:post_stream([containers, CID, attach], [stream, stdout, stderr]).
 
@@ -157,7 +164,7 @@ default_args(restart) ->
 default_args(stop) ->
     [{t, 10}];
 default_args(attach) ->
-    [{logs, false}, {stream, false}, {stdin, false}, {stdout, false}, {stderr, false}];
+    [{logs, true}, {stream, false}, {stdin, false}, {stdout, true}, {stderr, true}];
 
 default_args(build) ->
     [{path, undefined}, {tag, undefined}, {quiet, false}, {nocache, false}];
