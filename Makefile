@@ -2,7 +2,7 @@ APPS := lager
 ACTIVE_APPS := sasl,gproc,erlfsmon,compiler,crypto,syntax_tools,tools,rebar,active
 ERLDOCKER_APPS := asn1,crypto,public_key,ssl,mimetypes,hackney,jiffy,erldocker
 
-ERL_FLAGS= +sbwt none +swct lazy +swt high
+ERL_FLAGS= +sbwt none +swct lazy +swt high +K true
 
 run:
 	ERL_LIBS=deps erl -pa ebin -config run/sys.config -sname erldocker \
