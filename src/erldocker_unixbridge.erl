@@ -28,7 +28,7 @@ init([]) ->
     Socat = os:find_executable("socat"),
     Port = erlang:open_port({spawn_executable, erlsh:fdlink_executable()},
         [stream, exit_status, % stderr_to_stdout
-            {args, [Socat, "tcp-listen:32133,reuseaddr,bind=127.0.0.1", "unix-connect:/var/run/docker.sock"]}]),
+            {args, [Socat, "tcp-listen:32133,reuseaddr,bind=127.0.0.1,fork", "unix-connect:/var/run/docker.sock"]}]),
 
     {ok, #state{port=Port}}.
 
@@ -44,7 +44,7 @@ handle_info(_Info, State) ->
     {noreply, State}.
 
 terminate(_Reason, #state{port=Port}) ->
-    port_close(Port),
+    (catch port_close(Port)),
     ok.
 
 code_change(_OldVsn, State, _Extra) ->
