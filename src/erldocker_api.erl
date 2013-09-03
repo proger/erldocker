@@ -1,5 +1,6 @@
 -module(erldocker_api).
 -export([get/1, get/2, post/1, post/2, delete/1, delete/2, post_stream/1, post_stream/2]).
+-export([proplist_from_json/1, proplists_from_json/1]).
 
 -define(ADDR, application:get_env(erldocker, docker_http, <<"http://localhost:4243">>)).
 -define(OPTIONS, [{pool, erldocker_pool}]).
@@ -33,11 +34,14 @@ call(Method, URL) when is_binary(URL) ->
     error_logger:info_msg("api call: ~p ~s", [Method, binary_to_list(URL)]),
     ReqHeaders = [{<<"Content-Type">>, <<"application/json">>}],
     case hackney:request(Method, URL, ReqHeaders, <<>>, ?OPTIONS) of
-        {ok, StatusCode, _RespHeaders, Client} ->
+        {ok, StatusCode, RespHeaders, Client} ->
             {ok, Body, _Client1} = hackney:body(Client),
             case StatusCode of
                 X when X == 200 orelse X == 201 orelse X == 204 ->
-                    {ok, jiffy:decode(Body)};
+                    case lists:keyfind(<<"Content-Type">>, 1, RespHeaders) of
+                        {_, <<"application/json">>} -> {ok, jiffy:decode(Body)};
+                        _ -> {ok, {StatusCode, Body}}
+                    end;
                 _ ->
                     {error, {StatusCode, Body}}
             end;
@@ -95,3 +99,13 @@ to_url(X, []) ->
 to_url(X, Args) ->
     iolist_to_binary([?ADDR, convert_url_parts(X), <<"?">>, argsencode(Args, [])]).
 
+proplists_from_json(L) when is_list(L) -> [proplist_from_json(E) || E <- L].
+
+proplist_from_json({PropList}) when is_list(PropList) ->
+    [proc_kv({K, V}) || {K, V} <- PropList];
+proplist_from_json(X) -> X.
+
+proc_kv({BinKey, {Value}}) when is_list(Value) ->
+    {binary_to_atom(BinKey, utf8), proplist_from_json(Value)};
+proc_kv({BinKey, Value}) ->
+    {binary_to_atom(BinKey, utf8), Value}.

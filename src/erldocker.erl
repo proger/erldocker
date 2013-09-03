@@ -1,6 +1,9 @@
 -module(erldocker).
 -compile([export_all]).
 
+-define(PROPLISTS(X), either:bind(X, fn:comp(fun either:return/1, fun erldocker_api:proplists_from_json/1))).
+-define(PROPLIST(X), either:bind(X, fn:comp(fun either:return/1, fun erldocker_api:proplist_from_json/1))).
+
 %
 % Misc
 % 
@@ -92,10 +95,46 @@ delete(CID, Args) ->
 
 % @doc Identical to the docker wait command.
 wait(CID) ->
-    erldocker_api:post([containers, CID, wait]).
+    either:bind(erldocker_api:post([containers, CID, wait]), fun wait_proc/1).
+
+wait_proc({[{<<"StatusCode">>, Status}]}) -> {ok, Status}.
 
 % @doc Copy files or folders of container.
 copy(_CID, _Args) ->
+    {error, not_implemented}.
+
+%
+% Images
+% @doc http://docs.docker.io/en/latest/api/docker_remote_api_v1.4/#images
+%
+
+% @doc Returns list of images.
+images() -> images(default_args(images)).
+images(Args) ->
+    ?PROPLISTS(erldocker_api:get([images, json], Args)).
+
+% @doc Return low-level information on the image.
+image(I) ->
+    ?PROPLIST(erldocker_api:get([images, I, json])).
+
+% @doc TODO
+image_import(_) ->
+    {error, not_implemented}.
+
+% @doc Identical to the docker insert command.
+image_insert(I, Url, Path) ->
+    {error, not_implemented}.
+
+% @doc Identical to the docker history command.
+history(I) ->
+    ?PROPLISTS(erldocker_api:get([images, I, history])).
+
+% @doc Identical to the docker push command.
+push(Repository) ->
+    {error, not_implemented}.
+
+% @doc Identical to the docker commit command.
+commit(CID, Args) ->
     {error, not_implemented}.
 
 %%%%% docker-py COPY-PASTE BELOW
@@ -108,40 +147,17 @@ create_container(Image, Command, [{hostname, undefined}, {user, undefined}, {det
 % path (required) can be a local path (To a directory containing a Dockerfile) or a remote URL
 build([{path, undefined}, {tag, undefined}, {quiet, false}, {nocache, false}] = Args) -> {error, not_implemented}.
 
-% @doc Identical to the docker commit command.
-commit(Container, [{repository, undefined}, {tag, undefined}, {message, undefined}, {author, undefined}, {conf, undefined}] = Args) -> {error, not_implemented}.
-
-% @doc Identical to the docker history command.
-history(Image) -> {error, not_implemented}.
-
-% @doc Identical to the docker images command.
-images([{name, undefined}, {quiet, false}, {all, false}, {viz, false}] = Args) -> {error, not_implemented}.
-
-% @doc Identical to the docker import command.
-% If src is a string or unicode string, it will be treated as a URL to fetch the image from.
-% To import an image from the local machine, src needs to be a file-like object or bytes collection.
-import_image(Src, [{repository, undefined}, {tag, undefined}] = Args) -> {error, not_implemented}.
-
-% @doc Identical to the docker insert command.
-insert(Url, Path) -> {error, not_implemented}.
-
 % @doc Identical to the docker inspect command, but can only be used with an image ID.
 inspect_image(ImageId) -> {error, not_implemented}.
 
 % @doc Identical to the docker login command (But non-interactive, obviously).
 login(Username, [{password, undefined}, {email, undefined}] = Args) -> {error, not_implemented}.
 
-% @doc Identical to the docker logs command.
-logs(Container) -> {error, not_implemented}.
-
 % @doc Identical to the docker port command.
 port(Container, PrivatePort) -> {error, not_implemented}.
 
 % @doc Identical to the docker pull command.
 pull(Repository, [{tag, undefined}, {registry, undefined}] = Args) -> {error, not_implemented}.
-
-% @doc Identical to the docker push command.
-push(Repository) -> {error, not_implemented}.
 
 % @doc Identical to the docker rmi command.
 remove_image(Image) -> {error, not_implemented}.
@@ -166,6 +182,11 @@ default_args(stop) ->
 default_args(attach) ->
     [{logs, true}, {stream, false}, {stdin, false}, {stdout, true}, {stderr, true}];
 
+default_args(images) ->
+    [{all, false}];
+default_args(image_import) ->
+    [{repository, undefined}, {tag, undefined}, {fromImage, undefined}, {fromSrc, undefined}, {registry, undefined}];
+
 default_args(build) ->
     [{path, undefined}, {tag, undefined}, {quiet, false}, {nocache, false}];
 default_args(commit) ->
@@ -175,10 +196,6 @@ default_args(create_container) ->
     [{hostname, undefined}, {user, undefined}, {detach, false}, {stdin_open, false},
         {tty, false}, {mem_limit, 0}, {ports, undefined}, {environment, undefined},
         {dns, undefined}, {volumes, undefined}, {volumes_from, undefined}, {privileged, false}];
-default_args(images) ->
-    [{name, undefined}, {quiet, false}, {all, false}, {viz, false}];
-default_args(import_image) ->
-    [{repository, undefined}, {tag, undefined}];
 default_args(login) ->
     [{password, undefined}, {email, undefined}];
 default_args(pull) ->
