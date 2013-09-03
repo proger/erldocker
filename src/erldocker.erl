@@ -72,8 +72,11 @@ kill(CID, _Config) ->
 % @doc Attach to container.
 attach(CID) -> attach(CID, default_args(attach)).
 attach(CID, Args) ->
-    % TODO: stream
     erldocker_api:post([containers, CID, attach], Args).
+
+% @doc Attach to container. Starts sending messages to calling process. Returns {ok, Pid}.
+attach_stream(CID) ->
+    erldocker_api:post_stream([containers, CID, attach], [stream, stdout, stderr]).
 
 % @doc Identical to the docker rm command.
 delete(CID) -> delete(CID, default_args(delete)).
