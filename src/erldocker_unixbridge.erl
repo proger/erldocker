@@ -4,7 +4,7 @@
 
 %% API Function Exports
 
--export([start_link/0]).
+-export([start_link/1]).
 
 %% gen_server Function Exports
 
@@ -17,18 +17,23 @@
 %% API Function Definitions
 %% ------------------------------------------------------------------
 
-start_link() ->
-    gen_server:start_link({local, ?SERVER}, ?MODULE, [], []).
+start_link(BindPort) when is_integer(BindPort)->
+    gen_server:start_link({local, ?SERVER}, ?MODULE, [BindPort], []).
 
 %% ------------------------------------------------------------------
 %% gen_server Function Definitions
 %% ------------------------------------------------------------------
 
-init([]) ->
-    Socat = os:find_executable("socat"),
+init([BindPort]) ->
+    Socat = case os:find_executable("socat") of
+        false -> throw(socat_not_found);
+        S -> S
+    end,
     Port = erlang:open_port({spawn_executable, erlsh:fdlink_executable()},
         [stream, exit_status, % stderr_to_stdout
-            {args, [Socat, "tcp-listen:32133,reuseaddr,bind=127.0.0.1,fork", "unix-connect:/var/run/docker.sock"]}]),
+            {args, [Socat,
+                    "tcp-listen:" ++ integer_to_list(BindPort) ++ ",reuseaddr,bind=127.0.0.1,fork",
+                    "unix-connect:/var/run/docker.sock"]}]),
 
     {ok, #state{port=Port}}.
 

@@ -1,7 +1,7 @@
 -module(erldocker_api).
 -export([get/1, get/2, post/1, post/2, delete/1, delete/2]).
 
--define(ADDR, <<"http://localhost:32133">>).
+-define(ADDR, application:get_env(erldocker, docker_http, <<"http://localhost:4243">>)).
 -define(OPTIONS, [{pool, erldocker_pool}]).
 
 get(URL) -> call(get, URL).
