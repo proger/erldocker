@@ -1,6 +1,18 @@
 -module(docker_image).
--compile([export_all]).
 -include("erldocker.hrl").
+
+-export([images/0, images/1]).
+-export([image/1]).
+-export([create/1]).
+-export([insert/3]).
+-export([history/1]).
+-export([tag/2, tag/3]).
+-export([delete/1]).
+-export([search/1]).
+
+-export([push/2]). % not implemented
+
+-export([default_args/1]).
 
 %
 % Images
@@ -16,31 +28,42 @@ images(Args) ->
 image(I) ->
     ?PROPLIST(erldocker_api:get([images, I, json])).
 
-% @doc TODO
-image_import(_) ->
-    {error, not_implemented}.
+% @doc Create an image, either by pull it from the registry or by importing it.
+create(Args) ->
+    erldocker_api:post([images, create], Args).
 
-% @doc Identical to the docker insert command.
-image_insert(I, Url, Path) ->
-    {error, not_implemented}.
+% @doc Insert a file from Url in the image name at Path.
+insert(I, Url, Path) ->
+    erldocker_api:post([images, I, insert], [{path, Path}, {url, Url}]).
 
-% @doc Identical to the docker history command.
+% @doc Return the history of the image.
 history(I) ->
     ?PROPLISTS(erldocker_api:get([images, I, history])).
 
-% @doc Identical to the docker push command.
-push(Repository) ->
+% @doc Push the image name on the registry.
+push(_Repo, _AuthConfig) ->
     {error, not_implemented}.
 
-% @doc Identical to the docker commit command.
-commit(CID, Args) ->
-    {error, not_implemented}.
+% @doc Tag the image into a repository.
+tag(I, Repo) -> tag(I, Repo, default_args(tag)).
+tag(I, Repo, Args) ->
+    erldocker_api:post([images, I, tag], [{repo, Repo}|Args]).
+
+% @doc Remove the image from the filesystem.
+delete(I) ->
+    ?PROPLISTS(erldocker_api:delete([images, I])).
+
+% @doc Search for an image in the docker index.
+search(Term) ->
+    ?PROPLISTS(erldocker_api:get([images, search], [{term, Term}])).
 
 
 default_args(images) ->
     [{all, false}];
-default_args(image_import) ->
-    [{repository, undefined}, {tag, undefined}, {fromImage, undefined}, {fromSrc, undefined}, {registry, undefined}];
+default_args(create) ->
+    [{repo, undefined}, {tag, undefined}, {fromImage, undefined}, {fromSrc, undefined}, {registry, undefined}];
+default_args(tag) ->
+    [{tag, undefined}, {force, false}];
 
 default_args(_) ->
     [].
