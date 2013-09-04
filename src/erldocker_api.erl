@@ -39,15 +39,15 @@ call(Method, Body, URL) when is_binary(URL) andalso is_binary(Body) ->
     ReqHeaders = [{<<"Content-Type">>, <<"application/json">>}],
     case hackney:request(Method, URL, ReqHeaders, Body, ?OPTIONS) of
         {ok, StatusCode, RespHeaders, Client} ->
-            {ok, Body, _Client1} = hackney:body(Client),
+            {ok, RespBody, _Client1} = hackney:body(Client),
             case StatusCode of
                 X when X == 200 orelse X == 201 orelse X == 204 ->
                     case lists:keyfind(<<"Content-Type">>, 1, RespHeaders) of
-                        {_, <<"application/json">>} -> {ok, jiffy:decode(Body)};
-                        _ -> {ok, {StatusCode, Body}}
+                        {_, <<"application/json">>} -> {ok, jiffy:decode(RespBody)};
+                        _ -> {ok, {StatusCode, RespBody}}
                     end;
                 _ ->
-                    {error, {StatusCode, Body}}
+                    {error, {StatusCode, RespBody}}
             end;
         {error, _} = E ->
             E
