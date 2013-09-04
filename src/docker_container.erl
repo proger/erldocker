@@ -1,6 +1,23 @@
 -module(docker_container).
--compile([export_all]).
 -include("erldocker.hrl").
+
+-export([containers/0, containers/1]).
+-export([container/1]).
+-export([top/1]).
+-export([changes/1, diff/1]).
+-export([export/1]).
+-export([start/2]).
+-export([stop/1, stop/2]).
+-export([restart/1, restart/2]).
+-export([kill/1]).
+-export([attach_logs/1, attach_stream/1, attach_stream_with_logs/1]).
+-export([delete/1, delete/2]).
+-export([wait/1]).
+-export([commit/1, commit/2]).
+
+-export([copy/2]). % not implemented
+
+-export([default_args/1]).
 
 %
 % Containers
@@ -57,7 +74,7 @@ restart(CID, Args) ->
     erldocker_api:post([containers, CID, restart], Args).
 
 % @doc Identical to the docker kill command.
-kill(CID, _Config) ->
+kill(CID) ->
     erldocker_api:post([containers, CID, kill]).
 
 % @doc Attach to container and grab logs.
@@ -76,6 +93,10 @@ logs_proc(Pid, Acc) ->
 attach_stream(CID) ->
     erldocker_api:post_stream([containers, CID, attach], [stream, stdout, stderr]).
 
+% @doc Attach to container. Starts sending messages to calling process with output since the container start. Returns {ok, Pid}.
+attach_stream_with_logs(CID) ->
+    erldocker_api:post_stream([containers, CID, attach], [stream, logs, stdout, stderr]).
+
 % @doc Identical to the docker rm command.
 delete(CID) -> delete(CID, default_args(delete)).
 delete(CID, Args) ->
@@ -91,6 +112,10 @@ wait_proc({[{<<"StatusCode">>, Status}]}) -> {ok, Status}.
 copy(_CID, _Args) ->
     {error, not_implemented}.
 
+% @doc Create a new image from a container’s changes.
+commit(CID) -> commit(CID, default_args(commit)).
+commit(CID, Args) ->
+    ?PROPLIST(erldocker:post([commit], [{container, CID}|Args])).
 
 default_args(containers) ->
     [{quiet, false}, {all, false}, trunc, {latest, false}, {since, undefined},
@@ -103,6 +128,9 @@ default_args(stop) ->
     [{t, 10}];
 default_args(attach) ->
     [{logs, true}, {stream, false}, {stdin, false}, {stdout, true}, {stderr, true}];
+default_args(commit) ->
+    % http://docs.docker.io/en/latest/api/docker_remote_api_v1.4/#id34
+    [{repo, undefined}, {tag, undefined}, {m, undefined}, {author, undefined}, {run, undefined}];
 
 default_args(_) ->
     [].
