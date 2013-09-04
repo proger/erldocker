@@ -86,13 +86,9 @@ to_binary(X) when is_atom(X) -> atom_to_binary(X, utf8);
 to_binary(X) when is_integer(X) -> list_to_binary(integer_to_list(X));
 to_binary(X) when is_binary(X) -> X.
 
-convert_url_parts(L) when is_list(L) -> convert_url_parts(L, []);
-convert_url_parts(X) -> convert_url_parts([X], []).
-
-convert_url_parts([X|Xs], Acc) ->
-    convert_url_parts(Xs, [<<"/", (to_binary(X))/binary>>|Acc]);
-convert_url_parts([], Acc) ->
-    lists:reverse(Acc).
+convert_url_parts(Xs) when is_list(Xs) ->
+    [<<"/", (to_binary(X))/binary>> || X <- Xs];
+convert_url_parts(X) -> convert_url_parts([X]).
 
 to_url(X) ->
     iolist_to_binary([?ADDR|convert_url_parts(X)]).
