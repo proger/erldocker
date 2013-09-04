@@ -38,8 +38,7 @@ are not very nice as of right now. This will change without further notice.
 Check out the examples:
 
 ```erlang
-(erldocker@precise64)3> docker_container:containers().
-08:50:40.695 [info] api call: get http://localhost:32133/containers/ps?quiet=false&all=false&trunc=true&latest=false&limit=-1
+> docker_container:containers().
 {ok,[[{'Id',<<"6274938616c28e82b49b3ab120f9e9b9d96592d3b5bb95b53e91f740aca76243">>},
       {'Image',<<"base:latest">>},
       {'Command',<<"/bin/bash -c while true; do sleep 1; date; done">>},
@@ -57,26 +56,26 @@ Check out the examples:
       {'SizeRw',0},
       {'SizeRootFs',0}]]}
 
-(erldocker@precise64)4> docker_container:attach_stream("687264242").
-08:52:17.626 [info] api call: {post,stream} http://localhost:32133/containers/687264242/attach?stream=true&stdout=true&stderr=true
+> docker_container:attach_stream("687264242").
 {ok,<0.167.0>}
-(erldocker@precise64)5> flush().
+
+> flush().
 Shell got {<0.167.0>,{data,<<"Wed Sep  4 08:52:18 UTC 2013\n">>}}
 Shell got {<0.167.0>,{data,<<"Wed Sep  4 08:52:19 UTC 2013\n">>}}
 Shell got {<0.167.0>,{data,<<"Wed Sep  4 08:52:20 UTC 2013\n">>}}
 ok
-(erldocker@precise64)6> exit(pid(0,167,0), kill).
+
+> exit(pid(0,167,0), kill).
 ** exception exit: killed
 
-(erldocker@precise64)9> docker_container:kill("687264242").
-08:53:07.919 [info] api call: post http://localhost:32133/containers/687264242/kill
+> docker_container:kill("687264242").
 {ok,{204,<<>>}}
 
-(erldocker@precise64)11> {ok, Info} = docker_container:container("687264242"), {_, Image} = lists:keyfind('Image', 1, Info).
-08:54:27.886 [info] api call: get http://localhost:32133/containers/687264242/json
+> {ok, Info} = docker_container:container("687264242"),
+  {_, Image} = lists:keyfind('Image', 1, Info).
 {'Image',<<"b750fe79269d2ec9a3c593ef05b4332b1d1a02a62b4accb2c21d589ff2f5f2dc">>}
-(erldocker@precise64)12> docker_image:image(Image).
-08:54:43.775 [info] api call: get http://localhost:32133/images/b750fe79269d2ec9a3c593ef05b4332b1d1a02a62b4accb2c21d589ff2f5f2dc/json
+
+> docker_image:image(Image).
 {ok,[{id,<<"b750fe79269d2ec9a3c593ef05b4332b1d1a02a62b4accb2c21d589ff2f5f2dc">>},
      {parent,<<"27cf784147099545">>},
      {created,<<"2013-03-23T22:24:18.818426-07:00">>},
