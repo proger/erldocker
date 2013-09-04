@@ -3,6 +3,7 @@
 
 -export([containers/0, containers/1]).
 -export([container/1]).
+-export([create/1]).
 -export([top/1]).
 -export([changes/1, diff/1]).
 -export([export/1]).
@@ -27,11 +28,16 @@
 % @doc Identical to the docker ps command.
 containers() -> containers(default_args(containers)).
 containers(Args) ->
-    erldocker_api:get([containers, ps], Args).
+    ?PROPLISTS(erldocker_api:get([containers, ps], Args)).
 
 % @doc Identical to the docker inspect command, but can only be used with a container ID.
 container(CID) ->
-    erldocker_api:get([containers, CID]).
+    ?PROPLIST(erldocker_api:get([containers, CID, json])).
+
+% @doc Creates a container that can then be started.
+% http://docs.docker.io/en/latest/api/docker_remote_api_v1.4/#create-a-container
+create(ConfigBin) ->
+    erldocker_api:post_body([containers, create], ConfigBin).
 
 % @doc List processes running inside the container id.
 top(CID) ->
@@ -39,15 +45,8 @@ top(CID) ->
 
 % @doc Identical to the docker diff command.
 changes(CID) ->
-    either:bind(erldocker_api:get([containers, CID, changes]), fun changes_proc/1).
+    ?PROPLISTS(erldocker_api:get([containers, CID, changes])).
 diff(CID) -> changes(CID).
-
-changes_proc(Changes) ->
-    changes_proc(Changes, []).
-changes_proc([{[{<<"Path">>,Path},{<<"Kind">>,Kind}]}|Rest], Acc) ->
-    changes_proc(Rest, [{Path, Kind}|Acc]);
-changes_proc([], Acc) ->
-    lists:reverse(Acc).
 
 % @doc Identical to the docker export command.
 export(CID) -> 
@@ -131,6 +130,10 @@ default_args(attach) ->
 default_args(commit) ->
     % http://docs.docker.io/en/latest/api/docker_remote_api_v1.4/#id34
     [{repo, undefined}, {tag, undefined}, {m, undefined}, {author, undefined}, {run, undefined}];
+default_args(create) ->
+    [{hostname, undefined}, {user, undefined}, {detach, false}, {stdin_open, false},
+        {tty, false}, {mem_limit, 0}, {ports, undefined}, {environment, undefined},
+        {dns, undefined}, {volumes, undefined}, {volumes_from, undefined}, {privileged, false}];
 
 default_args(_) ->
     [].

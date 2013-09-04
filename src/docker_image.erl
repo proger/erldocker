@@ -4,6 +4,7 @@
 -export([images/0, images/1]).
 -export([image/1]).
 -export([create/1]).
+-export([build/2]).
 -export([insert/3]).
 -export([history/1]).
 -export([tag/2, tag/3]).
@@ -31,6 +32,11 @@ image(I) ->
 % @doc Create an image, either by pull it from the registry or by importing it.
 create(Args) ->
     erldocker_api:post([images, create], Args).
+
+% @doc Build an image from Dockerfile in the tarball.
+% http://docs.docker.io/en/latest/api/docker_remote_api_v1.4/#build-an-image-from-dockerfile-via-stdin
+build(TarBin, Args) ->
+    erldocker_api:post_body(build, Args, TarBin).
 
 % @doc Insert a file from Url in the image name at Path.
 insert(I, Url, Path) ->
@@ -64,6 +70,8 @@ default_args(create) ->
     [{repo, undefined}, {tag, undefined}, {fromImage, undefined}, {fromSrc, undefined}, {registry, undefined}];
 default_args(tag) ->
     [{tag, undefined}, {force, false}];
+default_args(build) ->
+    [{t, undefined}, {q, false}, {nocache, false}];
 
 default_args(_) ->
     [].

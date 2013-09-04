@@ -1,25 +1,26 @@
 -module(erldocker_api).
--export([get/1, get/2, post/1, post/2, delete/1, delete/2]).
+-export([get/1, get/2, post/1, post/2, post/3, delete/1, delete/2]).
 -export([get_stream/1, get_stream/2, post_stream/1, post_stream/2]).
 -export([proplist_from_json/1, proplists_from_json/1]).
 
 -define(ADDR, application:get_env(erldocker, docker_http, <<"http://localhost:4243">>)).
 -define(OPTIONS, [{pool, erldocker_pool}]).
 
-get(URL) -> call(get, URL).
-get(URL, Args) -> call(get, URL, Args).
-post(URL) -> call(post, URL).
-post(URL, Args) -> call(post, URL, Args).
-delete(URL) -> call(delete, URL).
-delete(URL, Args) -> call(delete, URL, Args).
-get_stream(URL) -> call(get_stream, URL).
-get_stream(URL, Args) -> call(get_stream, URL, Args).
-post_stream(URL) -> call(post_stream, URL).
-post_stream(URL, Args) -> call(post_stream, URL, Args).
+get(URL)               -> call(get, <<>>, URL, []).
+get(URL, Args)         -> call(get, <<>>, URL, Args).
+post(URL)              -> call(post, <<>>, URL, []).
+post(URL, Args)        -> call(post, <<>>, URL, Args).
+post(URL, Args, Body)  -> call(post, Body, URL, Args).
+delete(URL)            -> call(delete, <<>>, URL, []).
+delete(URL, Args)      -> call(delete, <<>>, URL, Args).
+get_stream(URL)        -> call({get, stream}, <<>>, URL, []).
+get_stream(URL, Args)  -> call({get, stream}, <<>>, URL, Args).
+post_stream(URL)       -> call({post, stream}, <<>>, URL, []).
+post_stream(URL, Args) -> call({post, stream}, <<>>, URL, Args).
 
-call({Method, stream}, URL) when is_binary(URL) ->
+call({Method, stream}, Body, URL) when is_binary(URL) andalso is_binary(Body) ->
     error_logger:info_msg("api call: ~p ~s", [{Method, stream}, binary_to_list(URL)]),
-    case hackney:request(Method, URL, [], <<>>, ?OPTIONS) of
+    case hackney:request(Method, URL, [], Body, ?OPTIONS) of
         {ok, StatusCode, _RespHeaders, Client} ->
             case StatusCode of
                 X when X == 200 orelse X == 201 orelse X == 204 ->
@@ -33,10 +34,10 @@ call({Method, stream}, URL) when is_binary(URL) ->
             E
     end;
 
-call(Method, URL) when is_binary(URL) ->
+call(Method, Body, URL) when is_binary(URL) andalso is_binary(Body) ->
     error_logger:info_msg("api call: ~p ~s", [Method, binary_to_list(URL)]),
     ReqHeaders = [{<<"Content-Type">>, <<"application/json">>}],
-    case hackney:request(Method, URL, ReqHeaders, <<>>, ?OPTIONS) of
+    case hackney:request(Method, URL, ReqHeaders, Body, ?OPTIONS) of
         {ok, StatusCode, RespHeaders, Client} ->
             {ok, Body, _Client1} = hackney:body(Client),
             case StatusCode of
@@ -50,11 +51,10 @@ call(Method, URL) when is_binary(URL) ->
             end;
         {error, _} = E ->
             E
-    end;
-call(Method, URL) ->
-    call(Method, to_url(URL)).
-call(Method, URL, Args) ->
-    call(Method, to_url(URL, Args)).
+    end.
+
+call(Method, Body, URL, Args) when is_binary(Body) ->
+    call(Method, Body, to_url(URL, Args)).
 
 read_body(Receiver, Client) ->
     case hackney:stream_body(Client) of
@@ -98,13 +98,14 @@ to_url(X, []) ->
 to_url(X, Args) ->
     iolist_to_binary([?ADDR, convert_url_parts(X), <<"?">>, argsencode(Args, [])]).
 
-proplists_from_json(L) when is_list(L) -> [proplist_from_json(E) || E <- L].
+proplists_from_json(L) when is_list(L) -> [proplist_from_json(E) || E <- L];
+proplists_from_json(_) -> [].
 
 proplist_from_json({PropList}) when is_list(PropList) ->
     [proc_kv({K, V}) || {K, V} <- PropList];
 proplist_from_json(X) -> X.
 
-proc_kv({BinKey, {Value}}) when is_list(Value) ->
+proc_kv({BinKey, {L} = Value}) when is_list(L) ->
     {binary_to_atom(BinKey, utf8), proplist_from_json(Value)};
 proc_kv({BinKey, Value}) ->
     {binary_to_atom(BinKey, utf8), Value}.
