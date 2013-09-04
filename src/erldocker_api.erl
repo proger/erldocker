@@ -1,5 +1,6 @@
 -module(erldocker_api).
--export([get/1, get/2, post/1, post/2, delete/1, delete/2, post_stream/1, post_stream/2]).
+-export([get/1, get/2, post/1, post/2, delete/1, delete/2]).
+-export([get_stream/1, get_stream/2, post_stream/1, post_stream/2]).
 -export([proplist_from_json/1, proplists_from_json/1]).
 
 -define(ADDR, application:get_env(erldocker, docker_http, <<"http://localhost:4243">>)).
@@ -11,12 +12,14 @@ post(URL) -> call(post, URL).
 post(URL, Args) -> call(post, URL, Args).
 delete(URL) -> call(delete, URL).
 delete(URL, Args) -> call(delete, URL, Args).
+get_stream(URL) -> call(get_stream, URL).
+get_stream(URL, Args) -> call(get_stream, URL, Args).
 post_stream(URL) -> call(post_stream, URL).
 post_stream(URL, Args) -> call(post_stream, URL, Args).
 
-call(post_stream, URL) when is_binary(URL) ->
-    error_logger:info_msg("api call: ~p ~s", [post_stream, binary_to_list(URL)]),
-    case hackney:request(post, URL, [], <<>>, ?OPTIONS) of
+call({Method, stream}, URL) when is_binary(URL) ->
+    error_logger:info_msg("api call: ~p ~s", [{Method, stream}, binary_to_list(URL)]),
+    case hackney:request(Method, URL, [], <<>>, ?OPTIONS) of
         {ok, StatusCode, _RespHeaders, Client} ->
             case StatusCode of
                 X when X == 200 orelse X == 201 orelse X == 204 ->
