@@ -7,9 +7,7 @@
                  kernel,
                  stdlib,
                  hackney,
-                 jsx,
-                 erlsh,
-                 fn
+                 jsx
                  ]},
   {mod, { erldocker_app, []}},
   {env, []}
