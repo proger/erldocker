@@ -36,7 +36,7 @@ create(Args) ->
 % @doc Build an image from Dockerfile in the tarball.
 % http://docs.docker.io/en/latest/api/docker_remote_api_v1.4/#build-an-image-from-dockerfile-via-stdin
 build(TarBin, Args) ->
-    erldocker_api:post_body(build, Args, TarBin).
+    erldocker_api:post(build, Args, TarBin).
 
 % @doc Insert a file from Url in the image name at Path.
 insert(I, Url, Path) ->
