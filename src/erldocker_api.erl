@@ -43,7 +43,7 @@ call(Method, Body, URL) when is_binary(URL) andalso is_binary(Body) ->
             case StatusCode of
                 X when X == 200 orelse X == 201 orelse X == 204 ->
                     case lists:keyfind(<<"Content-Type">>, 1, RespHeaders) of
-                        {_, <<"application/json">>} -> {ok, jiffy:decode(RespBody)};
+                        {_, <<"application/json">>} -> {ok, jsx:decode(RespBody)};
                         _ -> {ok, {StatusCode, RespBody}}
                     end;
                 _ ->
@@ -101,7 +101,7 @@ to_url(X, Args) ->
 proplists_from_json(L) when is_list(L) -> [proplist_from_json(E) || E <- L];
 proplists_from_json(_) -> [].
 
-proplist_from_json({PropList}) when is_list(PropList) ->
+proplist_from_json(PropList) when is_list(PropList) ->
     [proc_kv({K, V}) || {K, V} <- PropList];
 proplist_from_json(X) -> X.
 

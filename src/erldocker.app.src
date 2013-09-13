@@ -4,10 +4,14 @@
   {vsn, "1"},
   {registered, []},
   {applications, [
-                  kernel,
-                  stdlib,
-                  hackney,
-                  jiffy
+                 kernel,
+                 stdlib,
+                 sasl,
+                 lager,
+                 hackney,
+                 jsx,
+                 erlsh,
+                 fn
                  ]},
   {mod, { erldocker_app, []}},
   {env, []}
