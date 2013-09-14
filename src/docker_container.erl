@@ -37,7 +37,7 @@ container(CID) ->
 % @doc Creates a container that can then be started.
 % http://docs.docker.io/en/latest/api/docker_remote_api_v1.4/#create-a-container
 create(ConfigBin) ->
-    erldocker_api:post_body([containers, create], ConfigBin).
+    erldocker_api:post([containers, create], ConfigBin).
 
 % @doc List processes running inside the container id.
 top(CID) ->
@@ -49,7 +49,7 @@ changes(CID) ->
 diff(CID) -> changes(CID).
 
 % @doc Identical to the docker export command.
-export(CID) -> 
+export(CID) ->
     erldocker_api:get([containers, CID, export]).
 
 % @doc Start the container.
