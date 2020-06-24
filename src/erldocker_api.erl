@@ -39,7 +39,7 @@ call(Method, Body, URL) when is_binary(URL) andalso is_binary(Body) ->
     ReqHeaders = [{<<"Content-Type">>, <<"application/json">>}],
     case hackney:request(Method, URL, ReqHeaders, Body, ?OPTIONS) of
         {ok, StatusCode, RespHeaders, Client} ->
-            {ok, RespBody, _Client1} = hackney:body(Client),
+            {ok, RespBody} = hackney:body(Client),
             case StatusCode of
                 X when X == 200 orelse X == 201 orelse X == 204 ->
                     case lists:keyfind(<<"Content-Type">>, 1, RespHeaders) of
@@ -70,7 +70,7 @@ read_body(Receiver, Client) ->
     end.
 
 argsencode([], Acc) ->
-    hackney_util:join(lists:reverse(Acc), <<"&">>);
+    hackney_bstr:join(lists:reverse(Acc), <<"&">>);
 argsencode ([{_K,undefined}|R], Acc) ->
     argsencode(R, Acc);
 argsencode ([{K,V}|R], Acc) ->

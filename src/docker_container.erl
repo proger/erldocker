@@ -28,7 +28,7 @@
 % @doc Identical to the docker ps command.
 containers() -> containers(default_args(containers)).
 containers(Args) ->
-    ?PROPLISTS(erldocker_api:get([containers, ps], Args)).
+    ?PROPLISTS(erldocker_api:get([containers, json], Args)).
 
 % @doc Identical to the docker inspect command, but can only be used with a container ID.
 container(CID) ->
