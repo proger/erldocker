@@ -21,6 +21,13 @@ that spawns `socat` to bridge `AF_UNIX` to `AF_INET`.
     ]}
 ```
 
+If your docker is configured to use unix socket (in case of Docker for Mac OSX)
+
+```erlang
+    {erldocker, [
+            {docker_http, <<"http+unix://%2Fvar%2Frun%2Fdocker.sock">>}
+    ]}
+```
 If your docker is configured to listen on a TCP port, you may use the following configuration:
 
 ```erlang
