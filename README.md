@@ -10,8 +10,8 @@ To get started, add `erldocker` app to your release applications list. If you do
 
 ### Configuration
 
-Check out `run/sys.config`. By default, `docker` listens on the unix socket serving HTTP.
-Since Erlang doesn't have something like `gen_unix` by default, I'm using `erldocker_unixbridge`
+Check out `run/sys.config`. By default, `docker` listens on a unix socket serving HTTP.
+Since Erlang releases before OTP 19.0 don't have anything like `gen_unix` out of the box, I'm using `erldocker_unixbridge`
 that spawns `socat` to bridge `AF_UNIX` to `AF_INET`.
 
 ```erlang
@@ -21,13 +21,13 @@ that spawns `socat` to bridge `AF_UNIX` to `AF_INET`.
     ]}
 ```
 
-If your docker is configured to use unix socket (in case of Docker for Mac OSX)
-
+In newer versions you can set the scheme to [`http+unix`](https://github.com/benoitc/hackney/blob/21f84df8aeced6b5dc0d5de3f3be3f5d20f103f1/src/hackney_url.erl#L49):
 ```erlang
     {erldocker, [
             {docker_http, <<"http+unix://%2Fvar%2Frun%2Fdocker.sock">>}
     ]}
 ```
+
 If your docker is configured to listen on a TCP port, you may use the following configuration:
 
 ```erlang
