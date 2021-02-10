@@ -4,7 +4,7 @@
 -export([proplist_from_json/1, proplists_from_json/1]).
 
 -define(ADDR, application:get_env(erldocker, docker_http, <<"http://localhost:4243">>)).
--define(OPTIONS, [{pool, erldocker_pool}]).
+-define(OPTIONS, [{recv_timeout, infinity}]).
 
 get(URL)               -> call(get, <<>>, URL, []).
 get(URL, Args)         -> call(get, <<>>, URL, Args).
@@ -20,19 +20,7 @@ post_stream(URL, Args) -> call({post, stream}, <<>>, URL, Args).
 
 call({Method, stream}, Body, URL) when is_binary(URL) andalso is_binary(Body) ->
     error_logger:info_msg("api call: ~p ~s", [{Method, stream}, binary_to_list(URL)]),
-    case hackney:request(Method, URL, [], Body, ?OPTIONS) of
-        {ok, StatusCode, _RespHeaders, Client} ->
-            case StatusCode of
-                X when X == 200 orelse X == 201 orelse X == 204 ->
-                    Rcv = self(),
-                    Pid = spawn_link(fun() -> read_body(Rcv, Client) end),
-                    {ok, Pid};
-                _ ->
-                    {error, StatusCode}
-            end;
-        {error, _} = E ->
-            E
-    end;
+    spawn_link(fun() -> async(URL, self()) end);
 
 call(Method, Body, URL) when is_binary(URL) andalso is_binary(Body) ->
     error_logger:info_msg("api call: ~p ~s", [Method, binary_to_list(URL)]),
@@ -56,19 +44,39 @@ call(Method, Body, URL) when is_binary(URL) andalso is_binary(Body) ->
 call(Method, Body, URL, Args) when is_binary(Body) ->
     call(Method, Body, to_url(URL, Args)).
 
-read_body(Receiver, Client) ->
-    case hackney:stream_body(Client) of
-        {ok, Data, Client2} ->
-            Receiver ! {self(), {data, Data}},
-            read_body(Receiver, Client2);
-        {done, Client2} ->
-            Receiver ! {self(), {data, eof}},
-            {ok, Client2};
-        {error, _Reason} = E->
-            Receiver ! {self(), E},
-            E
-    end.
-
+async(Url, Receiver) ->
+    Options = [{recv_timeout, infinity}, async],
+    LoopFun = fun(Loop, Ref) ->
+		      receive
+			  {hackney_response, Ref, {status, StatusInt, Reason}} ->
+			      io:format("Status update ~p, ~p~n",[StatusInt, Reason]),
+			      Receiver ! {self(), {status, StatusInt, Reason}},
+			      Loop(Loop, Ref);
+			  {hackney_response, Ref, {headers, Headers}} ->
+			      Receiver ! {self(), {headers, Headers}},
+			      io:format("got headers: ~p~n", [Headers]),
+			      Loop(Loop, Ref);
+			  {hackney_response, Ref, done} ->
+			      Receiver ! {self(), {done}},
+			      ok;
+			  {hackney_response, Ref, Bin} ->
+			      io:format("got chunk: ~p~n", [Bin]),
+			      Receiver ! {self(), {data, Bin}},
+			      Loop(Loop, Ref);
+			  {Pid, {status, Code, Status}} ->
+			      io:format("Pid ~p returned ~p with code ~p~n", [Pid, Status, Code]),
+			      Receiver ! {self(), {status, Code, Status}},
+			      Loop(Loop, Ref);
+			  Else ->
+			      % In case this is running in a shell this breaks the loop,
+			      % otherwise the loop will be endless
+			      io:format("ELSE ~p~n", [Else]),
+			      Receiver ! {self(), {Else}}
+		      end
+	      end,
+    {ok, ClientRef} = hackney:post(Url, [], <<>>, Options),
+    LoopFun(LoopFun, ClientRef).
+    
 argsencode([], Acc) ->
     hackney_bstr:join(lists:reverse(Acc), <<"&">>);
 argsencode ([{_K,undefined}|R], Acc) ->
