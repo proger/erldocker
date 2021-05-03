@@ -5,7 +5,7 @@ ERLDOCKER_APPS := asn1,crypto,public_key,ssl,mimetypes,hackney,jsx,erldocker
 ERL_FLAGS= +sbwt none +swct lazy +swt high +K true
 
 run:
-	ERL_LIBS=deps erl -pa ebin -config run/sys.config -sname erldocker \
+	ERL_LIBS=deps erl -pa ebin -config config/sys.config -sname erldocker \
 		 $(ERL_FLAGS) \
 		 -eval '[ok = application:ensure_started(A, permanent) || A <- [$(APPS),$(ACTIVE_APPS),$(ERLDOCKER_APPS)]]'
 

@@ -1,14 +1,17 @@
 {application, erldocker,
  [
-  {description, ""},
+  {description, "Wrapper for the Docker API"},
   {vsn, "1"},
   {registered, []},
+  {mod, {erldocker_app, []}},
   {applications, [
                  kernel,
                  stdlib,
                  hackney,
                  jsx
                  ]},
-  {mod, { erldocker_app, []}},
-  {env, []}
+  {env, []},
+  {modules, []},
+  {licenses, []},
+  {links, []}
  ]}.

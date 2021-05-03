@@ -13,7 +13,7 @@
 -export([kill/1]).
 -export([attach_logs/1, attach_stream/1, attach_stream_with_logs/1]).
 -export([delete/1, delete/2]).
--export([wait/1]).
+-export([wait/1, wait/2]).
 -export([commit/1, commit/2]).
 
 -export([copy/2]). % not implemented
@@ -105,7 +105,26 @@ delete(CID, Args) ->
 wait(CID) ->
     either:bind(erldocker_api:post([containers, CID, wait]), fun wait_proc/1).
 
-wait_proc({[{<<"StatusCode">>, Status}]}) -> {ok, Status}.
+wait(CID, Receiver) ->
+    spawn_link(fun() ->
+		       either:bind(erldocker_api:post([containers, CID, wait]), 
+				   fun([{<<"Error">>, Error}, {<<"StatusCode">>, Status}]) ->
+					   case Error of
+					       null ->
+						   Receiver ! {stopped, Status};
+					       _ ->
+						   Receiver ! {stopped, Error, Status}
+					   end
+				   end)
+	       end).
+
+wait_proc([{<<"Error">>, Error}, {<<"StatusCode">>, Status}]) -> 
+    case Error of
+	null ->
+	    {ok, Status};
+	_ ->
+	    {error, Error, Status}
+    end.
 
 % @doc Copy files or folders of container.
 copy(_CID, _Args) ->
