@@ -31,8 +31,21 @@ call(Method, Body, URL) when is_binary(URL) andalso is_binary(Body) ->
             case StatusCode of
                 X when X == 200 orelse X == 201 orelse X == 204 ->
                     case lists:keyfind(<<"Content-Type">>, 1, RespHeaders) of
-                        {_, <<"application/json">>} -> {ok, jsx:decode(RespBody)};
-                        _ -> {ok, {StatusCode, RespBody}}
+                        {_, <<"application/json">>} -> 
+			    case re:split(RespBody, <<"\r\n">>) of
+				[RespBody] ->				    
+				    {ok, jsx:decode(RespBody)};
+				_ ->
+				    %% The response is a multiline response as a string
+				    Replaced = re:replace(
+						   RespBody, <<"\r\n">>, <<",">>, 
+						   [global, {return, list}]
+						  ),
+				    Trimmed = string:trim(Replaced, both, ","),
+				    {ok, jsx:decode(list_to_binary("["++Trimmed++"]"))}
+			    end;
+                        _ -> 
+			    {ok, {StatusCode, RespBody}}
                     end;
                 _ ->
                     {error, {StatusCode, RespBody}}
