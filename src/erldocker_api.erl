@@ -30,6 +30,7 @@ call(Method, Body, URL) when is_binary(URL) andalso is_binary(Body) ->
             {ok, RespBody} = hackney:body(Client),
             case StatusCode of
                 X when X == 200 orelse X == 201 orelse X == 204 ->
+		    io:format("RESPOBODY ~p~n", [RespBody]),
                     case lists:keyfind(<<"Content-Type">>, 1, RespHeaders) of
                         {_, <<"application/json">>} -> {ok, jsx:decode(RespBody)};
                         _ -> {ok, {StatusCode, RespBody}}
